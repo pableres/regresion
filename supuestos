@@ -1,0 +1,69 @@
+#supuestos
+library(palmerpenguins)
+#cargamos datos
+data(package = 'palmerpenguins')
+head(penguins)
+df<-as.data.frame(penguins)
+df<-df[complete.cases(df), ]
+
+#creamos regresión
+Mod <- lm(body_mass_g ~ flipper_length_mm, data=df)  # construimos una regresión.
+
+#Linealidad.
+mean(Mod$residuals)
+#gráficas
+library(car)
+crPlots(Mod)
+plot(Mod, 1)
+library(ggfortify)
+autoplot(Mod, 1)
+
+#normalidad 
+library(MASS)
+# distribution of studentized residuals
+sresid <- studres(Mod) 
+shapiro.test(sresid)
+ks.test(Mod$resid, pnorm)
+#No violamos el supuesto de normalidad (p > .05).
+#Gráfica
+plot(Mod, 2)
+library(ggfortify)
+autoplot(Mod, 2)
+hist(sresid, freq=FALSE, 
+     main="Distribution of Studentized Residuals")
+xfit<-seq(min(sresid),max(sresid),length=40) 
+yfit<-dnorm(xfit) 
+lines(xfit, yfit)
+
+#homocedasticidad
+#Non-constant Variance Score Test
+ncvTest(Mod)
+#p < .05, suggesting that our data is not homoscedastic.
+#Breusch-Pagan Test For Homoscedasticity
+library(lmtest)
+bptest(Mod)
+
+#Gráfica
+plot(Mod, 3)
+library(ggfortify)
+autoplot(Mod, 3)
+
+
+#independencia ()
+durbinWatsonTest(Mod)
+#No violamos el supuesto indepencia assumption (p > .05).
+library(lawstat)
+lawstat::runs.test(Mod$residuals)
+#No violamos el supuesto indepencia assumption (p > .05).
+#Gráfica
+plot(Mod$resid)
+acf(Mod$residuals)
+
+#comparar los supuestos
+#interpretación en https://cran.r-project.org/web/packages/gvlma/gvlma.pdf pag 7
+library(gvlma)
+gvlma(Mod)
+summary(gvlma(Mod))
+plot(gvlma(Mod))
+
+plot(Mod)
