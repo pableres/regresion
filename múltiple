@@ -1,0 +1,127 @@
+ipak <- function(pkg){
+  new.pkg <- pkg[!(pkg %in% installed.packages()[, "Package"])]
+  if (length(new.pkg)) 
+    install.packages(new.pkg, dependencies = TRUE)
+  sapply(pkg, require, character.only = TRUE)
+}
+
+packages <- c("forestmodel","see","jtools","olsrr","parameters","stats","ggplot2", "palmerpenguins", "plot3D" , "plot3Drgl","apaTables","gvlma","broomExtra","performance")
+ipak(packages)
+
+#cambiar a vuestro directorio de trabajo.
+setwd('C:/Users/pable/Desktop/Doctorado')
+
+data(package = 'palmerpenguins')
+head(penguins)
+df<-as.data.frame(penguins)
+df<-df[complete.cases(df), ]
+
+
+#Hacemos la regresión
+linearMod <- lm(body_mass_g ~ flipper_length_mm + bill_length_mm + bill_depth_mm, data=df)  # build linear regression model on full data
+print(linearMod)
+
+#comprobamos los supuetos:
+gvlma(linearMod)
+summary(gvlma(linearMod))
+plot(gvlma(linearMod))
+
+#mejores presentaciones de resultados.
+model_parameters(linearMod, bootstrap = TRUE, iterations = 500)
+
+ols_step_both_p(linearMod)
+
+summary(linearMod)
+
+broomExtra::glance(linearMod)
+
+#intervalos de confianza
+confint(linearMod)
+
+#ciertos indicadore
+AIC(linearMod)  # AIC => 
+BIC(linearMod)  # BIC =>
+
+#te muestra el mejor r2 para utilizar en tu modelo.
+performance::r2(linearMod)
+
+#modelo de predicción
+library(readxl)
+testData <- read_excel("testData.xlsx")
+View(testData)
+
+pesoPred <- predict(linearMod, testData)
+actuals_preds <- data.frame(cbind(actuals=testData$Peso, predicteds=pesoPred))  # make actuals_predicteds dataframe.
+correlation_accuracy <- cor(actuals_preds)  
+correlation_accuracy
+head(actuals_preds)
+
+
+#Tablas apañadas
+forest_model(linearMod)
+
+apa.reg.table(linearMod, filename = "tablaregresion.doc", table.number = NA,
+              prop.var.conf.level = 0.95)
+
+#visualizaciones
+
+ggstatsplot::ggcoefstats(
+  x = stats::lm(body_mass_g ~ flipper_length_mm + bill_length_mm + bill_depth_mm, data=df),
+  sort = "ascending", # sorting the terms of the model based on estimate values
+  ggtheme = ggplot2::theme_gray(), # changing the default theme
+  stats.label.color = c("#CC79A7"),
+  title = "Chupito R",
+  subtitle = "Suscríbete"
+) +
+  # further modification with the ggplot2 commands
+  # note the order in which the labels are entered
+  ggplot2::scale_y_discrete(labels = c(
+    "pico1", "pico 2", "aleta")) +
+  ggplot2::labs(y = "etiqueta y)") +
+  ggplot2::theme(axis.title.y = ggplot2::element_text(size = 14, face = "bold"))
+
+
+plot_summs(linearMod, scale = TRUE, plot.distributions = TRUE, inner_ci_level = .9)
+
+
+#representación 3D de la regesión con dos predictoras
+z<-df$body_mass_g
+y<-df$bill_length_mm
+x<-df$flipper_length_mm
+
+scatter3D(x, y, z, theta = 15, phi = 20)
+scatter3D(x, y, z, phi = 0, bty ="g")
+scatter3D(x, y, z, pch = 18,  theta = 20, phi = 20,
+          main = "pingu", xlab = "Aleta",
+          ylab ="Pico", zlab = "Peso")
+
+scatter3D(x, y, z, phi = 0, bty = "g",
+          pch = 20, cex = 2, ticktype = "detailed",xlab = "Aleta",
+          ylab ="Pico", zlab = "Peso")
+
+#es importante que los valores z sean de la dependiente. 
+#creamos otro obj de regresión
+objr<-lm(z ~ x+y)
+objr
+#preparamos el modelado 3d
+grid.lines = 26
+x.pred <- seq(min(x), max(x), length.out = grid.lines)
+y.pred <- seq(min(y), max(y), length.out = grid.lines)
+xy <- expand.grid( x = x.pred, y = y.pred)
+z.pred <- matrix(predict(objr, newdata = xy), 
+                 nrow = grid.lines, ncol = grid.lines)
+
+# Marcamos las líneas de iteracción para que busquen la recta de regresión
+fitpoints <- predict(objr)
+#ploteamos la gráfica en 3d con recta de regresión
+scatter3D(x, y, z, pch = 18, cex = 2, 
+          theta = 20, phi = 20, ticktype = "detailed",
+          xlab = "aleta", ylab = "pico", zlab = "peso",  
+          surf = list(x = x.pred, y = y.pred, z = z.pred,  
+                      facets = NA, fit = fitpoints), main = "")
+#la hacemos interactiva (coge el último gráfico que hayamos creado)
+plotrgl()
+#lo guardamos como gif en nuestro working directory
+movie3d(spin3d(axis = c(0, 0, 1)), duration = 15,
+        dir = getwd())
+
