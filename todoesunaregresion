@@ -1,0 +1,106 @@
+#todo es una regresión 
+
+#https://lindeloev.github.io/tests-as-linear/linear_tests_cheat_sheet.pdf
+
+#https://drmowinckels.io/blog/2020/the-linear-regression-family-in-r/
+
+
+library(tidyverse)
+library(tibble)
+
+id <- as.factor(1:30)
+sex <- as.factor(sample(c("Male", "Female"), 30, replace = TRUE))
+age <- sample(18:60, 30, replace = TRUE)
+group <- as.factor(sample(1:2, 30, replace = TRUE))
+fost1 <- sample(30:50, 30, replace = TRUE)
+confid1 <- sample(10:25, 30, replace = TRUE)
+depress1 <- sample(35:50, 30, replace = TRUE)
+fost2 <- sample(30:50, 30, replace = TRUE)
+confid2 <- sample(10:25, 30, replace = TRUE)
+depress2 <- sample(35:50, 30, replace = TRUE)
+fost3 <- sample(30:50, 30, replace = TRUE)
+confid3 <- sample(10:25, 30, replace = TRUE)
+depress3 <- sample(35:50, 30, replace = TRUE)
+exam <- sample(30:50, 30, replace = TRUE)
+mah_1 <- sample(30:50, 30, replace = TRUE)
+DepT1gp2 <- sample(30:50, 30, replace = TRUE)
+DepT2Gp2 <- sample(30:50, 30, replace = TRUE)
+DepT3gp2 <- sample(30:50, 30, replace = TRUE)
+
+df <- tibble(
+  id = id,
+  sex = sex,
+  age = age,
+  group = group,
+  fost1 = fost1,
+  confid1 = confid1,
+  depress1 = depress1,
+  fost2 = fost2,
+  confid2 = confid2,
+  depress2 = depress2,
+  fost3 = fost3,
+  confid3 = confid3,
+  depress3 = depress3,
+  exam = exam,
+  mah_1 = mah_1,
+  DepT1gp2 = DepT1gp2,
+  DepT2Gp2 = DepT2Gp2,
+  DepT3gp2 = DepT3gp2
+)
+
+df
+
+
+#
+cor <- cor.test(df$depress3, df$depress1, method = "pearson")
+cor
+
+cor_lm <- lm(depress3 ~ depress1, data = df)
+summary(cor_lm)
+
+
+#spearman
+
+spe_cor <- cor.test(df$depress3, df$depress1, method = "spearman",exact = FALSE)
+spe_cor
+
+
+spe_cor_lm<-lm(rank(depress3) ~ 1 + rank(depress1),data = df)
+summary(spe_cor_lm)
+
+
+
+#t-test (con un valor de referencia "0")
+
+t_test <- t.test(df$depress1)
+
+t_test
+
+#no comparamos con otro datos sino con una distribución nula.
+lm_ttest <- lm(depress1 ~ 1, data = df)
+summary(lm_ttest)
+
+#t -test emparejada
+
+t_relac <- t.test(df$depress1, df$depress3, paired = TRUE)
+t_relac
+
+lm_trelac <- lm(depress1 - depress3 ~ 1, data = df)
+summary(lm_trelac)
+
+#t test independiente
+
+t_ideped <- t.test(depress1~ group, var.equal=TRUE,data = df)
+t_ideped
+
+lm_tindep <- lm(depress1 ~ 1 + group,data = df)
+summary(lm_tindep)
+
+#anova es lo mismo
+
+anova <- aov(depress1 ~ group,data = df)
+anova
+summary(anova)
+
+lm_anova <- lm(depress1~ group,data = df)
+summary(lm_anova)
